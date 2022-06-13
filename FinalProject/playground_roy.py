@@ -2,10 +2,6 @@ import xml.etree.ElementTree
 import xml.etree.ElementTree as ET
 
 
-# for elem in tree.iter():
-#     print(f'elem {elem}')
-
-
 def get_tree():
     path = r'/Users/royrubin/PycharmProjects/CyberSecurityAndArtificialIntelligence/FinalProject/CleanedFormattedData/ArmySgt1961.xml'
     tree = ET.parse(path)
@@ -28,22 +24,6 @@ def print_all_tags(tree):
 
     # Just printing out the result
     print(elem_tags_list)
-
-
-"""
->>> from xml.etree.ElementTree import ElementTree
->>> tree = ElementTree()
->>> tree.parse("index.xhtml")
-<Element 'html' at 0xb77e6fac>
->>> p = tree.find("body/p")     # Finds first occurrence of tag p in body
->>> p
-<Element 'p' at 0xb77ec26c>
->>> links = list(p.iter("a"))   # Returns list of all links
->>> links
-[<Element 'a' at 0xb77ec2ac>, <Element 'a' at 0xb77ec1cc>]
->>> for i in links:             # Iterates through all found links
-...     i.attrib["target"] = "blank"
-"""
 
 
 def extract_post_raw_data(post_elem: xml.etree.ElementTree.Element):
@@ -94,16 +74,6 @@ def extract_post_raw_data(post_elem: xml.etree.ElementTree.Element):
 
     # Step 3: return if everything worked
     return output
-
-
-def print_all_conversations(tree):
-    print(f'\nEntered: print_all_conversations')
-
-    posts = [elem for elem in tree.iter() if elem.tag == 'POST']
-    posts = list(tree.iter("POST"))
-
-    talks = [elem.attrib for elem in posts]
-    print(posts)
 
 
 def get_all_conversation_raw_data(tree):
