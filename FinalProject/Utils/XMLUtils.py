@@ -1,32 +1,14 @@
-import xml.etree.ElementTree
 import xml.etree.ElementTree as ET
 
 
-def get_tree():
-    path = r'/Users/royrubin/PycharmProjects/CyberSecurityAndArtificialIntelligence/FinalProject/CleanedFormattedData/ArmySgt1961.xml'
-    tree = ET.parse(path)
-
-    # print root info
+def get_tree_root_from_filepath(file_path: str):
+    tree = ET.parse(file_path)
     root = tree.getroot()
     print(f'root {root} root.tag {root.tag} root.attrib {root.attrib}')
-
     return tree
 
 
-def print_all_tags(tree):
-    elem_tags_list = []
-
-    for elem in tree.iter():
-        elem_tags_list.append(elem.tag)
-
-    # now I remove duplicities - by convertion to set and back to list
-    elem_tags_list = list(set(elem_tags_list))
-
-    # Just printing out the result
-    print(elem_tags_list)
-
-
-def extract_post_raw_data(post_elem: xml.etree.ElementTree.Element):
+def extract_post_raw_data(post_elem: ET.Element):
     """
     post example:
 
@@ -76,41 +58,20 @@ def extract_post_raw_data(post_elem: xml.etree.ElementTree.Element):
     return output
 
 
-def get_all_conversation_raw_data(tree):
+def get_all_conversation_raw_data(tree: ET) -> list:
     posts = list(tree.iter("POST"))  # equivalent: posts = [elem for elem in tree.iter() if elem.tag == 'POST']
     data = [extract_post_raw_data(post) for post in posts]
     return data
 
 
-def generate_features_from_conversation(file_name):
-    features = {}
-    features['file_id'] = file_name
+def print_all_unique_tags(tree: ET):
+    elem_tags_list = []
 
+    for elem in tree.iter():
+        elem_tags_list.append(elem.tag)
 
-def process_single_file():
-    pass
-    # TODO
-    generate tree from file
-    get the data
-    generate features
+    # now I remove duplicities - by convertion to set and back to list
+    elem_tags_list = list(set(elem_tags_list))
 
-def generate_dataframe_from_data():
-    pass
-    # TODO
-    for file in files:
-        open file
-        process_single_file()
-        add to dataframe
-
-
-
-def main():
-    tree = get_tree()
-    print_all_tags(tree)
-    # print_all_conversations(tree)
-    data = get_all_conversation_raw_data(tree)
-    print(data[0])
-
-
-if __name__ == '__main__':
-    main()
+    # Just printing out the result
+    print(elem_tags_list)
