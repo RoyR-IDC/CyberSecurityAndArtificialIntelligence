@@ -1,9 +1,9 @@
-from FinalProject.Utils.DataUtils import generate_dataframe_from_data
+from FinalProject.Utils.DataUtils import generate_dataframe_from_all_file_paths
+from FinalProject.global_definitions import DATA_DIR_PATH
 
 
 def main():
-    path = r'/Users/royrubin/PycharmProjects/CyberSecurityAndArtificialIntelligence/FinalProject/CleanedFormattedData/'
-    features_dataframe = generate_dataframe_from_data(data_dir_path=path)
+    features_dataframe = generate_dataframe_from_all_file_paths(data_dir_path=DATA_DIR_PATH)
     print(features_dataframe.info())
 
 

@@ -3,8 +3,6 @@ import xml.etree.ElementTree as ET
 
 def get_tree_root_from_filepath(file_path: str):
     tree = ET.parse(file_path)
-    root = tree.getroot()
-    print(f'root {root} root.tag {root.tag} root.attrib {root.attrib}')
     return tree
 
 
