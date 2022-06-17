@@ -3,8 +3,8 @@ from os.path import isfile, join
 
 import pandas as pd
 
-from FinalProject.Utils.FeatureUtils import FeatureGenerator
-from FinalProject.Utils.XMLUtils import get_tree_root_from_filepath, get_all_conversation_raw_data
+from FinalProject.CustomClasses.FeatureGenerator import FeatureGenerator
+from FinalProject.CustomClasses.FormatConverter import FormatConverter
 
 
 def get_all_data_file_paths(dir_path: str):
@@ -20,6 +20,7 @@ def generate_features_from_conversation_raw_data(conversation_raw_data: list) ->
     features['num_of_posts'] = feature_generator.get_conversation_number_of_posts()
     features['num_of_profanity_words'] = feature_generator.get_amount_of_profanity_words_in_conversation()
     features['num_of_suggestive_words'] = feature_generator.get_amount_of_suggestive_words_in_conversation()
+    features['equality_in_posts'] = feature_generator.get_equality_measure_between_number_of_posts_each_person()
 
     return features
 
@@ -33,17 +34,23 @@ def process_single_file(data_file_path: str) -> dict:
     :param data_file_path:
     :return:
     '''
-    if 'chatlog' in data_file_path:
+    if 'chatlog' in data_file_path or 'README' in data_file_path:
         print(f'intentionally skipping file {data_file_path}')
         return {}
     try:
-        tree = get_tree_root_from_filepath(file_path=data_file_path)
+        converter = FormatConverter()
+        conversation_raw_data = converter.get_conversation_from_file(filepath=data_file_path)
     except Exception as e:
         print(f'could not get tree from filepath {data_file_path}. error was {type(e)}: {e}')
         return {}
-    # print_all_tags(tree)
-    conversation_raw_data = get_all_conversation_raw_data(tree)
+
+    # generate features
     features_dict = generate_features_from_conversation_raw_data(conversation_raw_data)
+    if '.xml' in data_file_path:
+        # assumption: only the .xml files are the ones that have predators in them (by our choice of datasets)
+        features_dict['label'] = 1  # i.e, there is a predator in this conversation
+    else:
+        features_dict['label'] = 0  # i.e, this is a predator
     return features_dict
 
 

@@ -56,7 +56,7 @@ def extract_post_raw_data(post_elem: ET.Element):
     return output
 
 
-def get_all_conversation_raw_data(tree: ET) -> list:
+def get_all_conversation_raw_data_xml(tree: ET) -> list:
     posts = list(tree.iter("POST"))  # equivalent: posts = [elem for elem in tree.iter() if elem.tag == 'POST']
     data = [extract_post_raw_data(post) for post in posts]
     return data

@@ -9,5 +9,5 @@ else:
     PROJECT_PATH = r''
 
 # relative paths
-DATA_DIR_PATH = os.path.join(PROJECT_PATH, 'CleanedFormattedData/')
+DATA_DIR_PATH = os.path.join(PROJECT_PATH, 'Data/')
 WORD_BANK_DIR_PATH = os.path.join(PROJECT_PATH, 'WordBank/')

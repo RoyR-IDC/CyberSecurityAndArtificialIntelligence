@@ -1,3 +1,4 @@
+import numpy as np
 from dateutil import parser
 import os
 
@@ -20,7 +21,12 @@ compound in author conv,pos word count author,neg word count author,prof word co
 class FeatureGenerator(object):
     def __init__(self, conversation_raw_data: list):
         # save the conversation raw data
-        self._data = conversation_raw_data
+        self._all_posts = conversation_raw_data
+
+        # split into different persons
+        person1 = self._all_posts[0]['id']
+        self._person1_posts = [post for post in self._all_posts if post['id'] == person1]
+        self._person2_posts = [post for post in self._all_posts if post['id'] != person1]
 
         # load all existing words.
         # assumption: every text file has one word per line.
@@ -40,7 +46,7 @@ class FeatureGenerator(object):
 
     def get_amount_of_profanity_words_in_conversation(self):
         counter = 0
-        for post in self._data:
+        for post in self._all_posts:
             if post['talk'] is None or post['talk'] == '':
                 continue
             post_unique_words = set(post['talk'].split())
@@ -49,7 +55,7 @@ class FeatureGenerator(object):
 
     def get_amount_of_suggestive_words_in_conversation(self):
         counter = 0
-        for post in self._data:
+        for post in self._all_posts:
             if post['talk'] is None or post['talk'] == '':
                 continue
             post_unique_words = set(post['talk'].split())
@@ -57,16 +63,16 @@ class FeatureGenerator(object):
         return counter
 
     def get_conversation_number_of_posts(self):
-        return len(self._data)
+        return len(self._all_posts)
 
     def get_conversation_duration(self):
         # get first post in the conversation time stamp
-        first = self._data[0]
+        first = self._all_posts[0]
         first_datetime = first['datetime'].replace(']','').replace('[','')
         first_datetime = parser.parse(first_datetime['datetime'])
 
         # get last post in conversation time stamp
-        last = self._data[-1]
+        last = self._all_posts[-1]
         last_datetime = last['datetime'].replace(']','').replace('[','')
         last_datetime = parser.parse(last_datetime['datetime'])
 
@@ -74,3 +80,11 @@ class FeatureGenerator(object):
         daysDiff = (last_datetime - first_datetime).days
         result = daysDiff * 24  # *24 converts to hours
         return result
+
+    def get_equality_measure_between_number_of_posts_each_person(self):
+        num_of_posts_person1 = len(self._person1_posts)
+        num_of_posts_person2 = len(self._person2_posts)
+        if num_of_posts_person2 != 0:
+            return num_of_posts_person1 / num_of_posts_person2
+        else:
+            return np.nan

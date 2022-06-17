@@ -72,3 +72,13 @@ Example of the XML format of a conversation:
 what a single post looks like:
 
 ![img.png](Misc/post_example1_img.png)
+
+Additional Reading material:
+
+https://paperswithcode.com/dataset/panc   
+leads to:
+https://gitlab.com/early-sexual-predator-detection/eSPD-datasets
+and can be also reached from:
+https://aclanthology.org/2021.acl-long.386/
+https://early-sexual-predator-detection.gitlab.io/
+
