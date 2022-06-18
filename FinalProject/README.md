@@ -1,8 +1,17 @@
-The final project is a combination of HW2 & HW3.
+# Final Project
 
-**Definition of HW2:**
+> The final project is a combination of HW2 & HW3.
+
+> Link to shared google doc: https://docs.google.com/document/d/1PLm8OfgqTKqdHTzfOkaW3YHTR0DQLuaV2IqfbenKZBg/edit?usp=sharing 
+
+> defnitions of hw2 and hw3 can be seen below 
+
+> Additional info uploaded at the end of the readme
+
+## Definition of HW2
 
 Task #2 - Short text predator detection
+
 This is the first part of two in your mini project which is 80% of your final grade (this part is 50% and the next one is 30%).
 
 As opposed to previous task - this one is very similar to the ones we encounter in real life (i.e., the goal is clear, but everything else is obscure). 
@@ -17,22 +26,26 @@ Since this tasks goal is focusing on real-life challenges, there is no specific 
 
 Your delivery should include:
 
-Report - a pdf document with complete review of all your work. 
-Code (may be in any form (colab, .py, Jupyter). Please note that I will not be reviewing your code results - hence, if you have anything you wish to present in your report - make sure you copy it.
+- Report - a pdf document with complete review of all your work. 
+- Code (may be in any form (colab, .py, Jupyter). Please note that I will not be reviewing your code results - hence, if you have anything you wish to present in your report - make sure you copy it. 
+
 What am I looking for?
 
-Problem definition - make it clear 
-Data handling (note that the data your customer shared with has no benign data)
-Simplicity - should be easy to implement and understand
-Deployability - address this issue - eventually it should work not only in theory
-Profound report with comprehensive documentation 
-Future work and discussion - where this project can lead us to? build-up for your next clients project
+- Problem definition - make it clear 
+- Data handling (note that the data your customer shared with has no benign data)
+- Simplicity - should be easy to implement and understand
+- Deployability - address this issue - eventually it should work not only in theory
+- Profound report with comprehensive documentation 
+- Future work and discussion - where this project can lead us to? build-up for your next clients project
+
 Let your customer know about your thoughts, limitations and restrictions. 
+
 You are free to use any package, tool, service. No limitations.
 
-**Definition of HW3:**
+## Definition of HW3
 
 Task #3 - Model Watermarking
+
 Following task #2 – malicious predator detection using short text topic modeling, the company owners decided to deploy their model on edge devices (rather than on BE) to reduce the response time which is a critical factor in the case of real attack
 
 Though having a great idea, if they change the deployment method, they risk themselves in a model theft as they cannot know their customers motives and cannot control their customers actions.
@@ -47,14 +60,16 @@ The watermarking should address two attack/steal vectors:
 
 Model stealing – i.e., the adversary was able stealing the model "as is"
 Model stealing by "reverse engineering" – the adversary was able re-building a model using Blackbox sampling
+
 Please note that you must address the three main factors of watermarking while proposing your solution:
 
-Capacity – The size/amount of watermarks
-Robustness/Security – Resilience to changes and/or adversarial attacks for watermark removal
-Imperceptibility – Can someone know/understand there is a watermark if he was not told so? Please note that as opposed to steganography, in many cases watermark is perceptible on purpose
+- Capacity – The size/amount of watermarks
+- Robustness/Security – Resilience to changes and/or adversarial attacks for watermark removal
+- Imperceptibility – Can someone know/understand there is a watermark if he was not told so? Please note that as opposed to steganography, in many cases watermark is perceptible on purpose
+
 You may use any watermark and/or steganography embedding technique.
 
-As always – try to make it as simple as possible – we think and design production oriented, not theoretical "works on paper" products
+> As always – try to make it as simple as possible – we think and design production oriented, not theoretical "works on paper" products
 
 The implementation should be conducted on the model you deliver on your second task.
 
@@ -62,8 +77,7 @@ In the case you are not able conducting all your experiments on real data, you m
 
 
 
-**Additional info I added**
-
+## Additional info By Roy
 
 Example of the XML format of a conversation:
 
@@ -73,7 +87,26 @@ what a single post looks like:
 
 ![img.png](Misc/post_example1_img.png)
 
-Additional Reading material:
+
+### Important note regarding the datasets
+
+there are 3 datasets currently used:
+
+> xml files:
+they are based on what yoni sent, but with a fix to the format that was sent in the whatsapp group
+
+> regarding the jarvischatbot.tsv file:
+taken from: https://www.kaggle.com/code/akshitrai/chatbot-jarvis/notebook
+
+> regarding the yml files: they came from:
+https://github.com/gunthercox/chatterbot-corpus
+
+> after downloading the files, i added some of my own: all files with "WM" have the watermark in them. 
+all files "snippet" were geneated by me from the original .tsv file. 
+the file with "fuck" is adding curse words to a regular convesation for variance. 
+
+
+### Additional Reading material:
 
 https://paperswithcode.com/dataset/panc   
 leads to:
