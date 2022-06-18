@@ -1,3 +1,8 @@
+import csv
+
+import numpy as np
+
+
 def extract_post_raw_data(talk_string: str, index: int):
     # prep
     output = {}

@@ -62,6 +62,14 @@ class FeatureGenerator(object):
             counter += len(list(post_unique_words & self._suggestive_words))
         return counter
 
+    def get_amount_of_watermark_words_in_conversation(self):
+        counter = 0
+        for post in self._all_posts:
+            if post['talk'] is None or post['talk'] == '':
+                continue
+            counter += post['talk'].count('OHRWM')
+        return counter
+
     def get_conversation_number_of_posts(self):
         return len(self._all_posts)
 
@@ -88,3 +96,4 @@ class FeatureGenerator(object):
             return num_of_posts_person1 / num_of_posts_person2
         else:
             return np.nan
+

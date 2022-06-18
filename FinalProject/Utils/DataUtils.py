@@ -12,15 +12,16 @@ def get_all_data_file_paths(dir_path: str):
 
 
 def generate_features_from_conversation_raw_data(conversation_raw_data: list) -> dict:
-    # prepare
+    ## prepare
     feature_generator = FeatureGenerator(conversation_raw_data=conversation_raw_data)
     features = dict()
 
-    # add features
-    features['num_of_posts'] = feature_generator.get_conversation_number_of_posts()
+    ## add features
     features['num_of_profanity_words'] = feature_generator.get_amount_of_profanity_words_in_conversation()
     features['num_of_suggestive_words'] = feature_generator.get_amount_of_suggestive_words_in_conversation()
-    features['equality_in_posts'] = feature_generator.get_equality_measure_between_number_of_posts_each_person()
+    features['WM_counts'] = feature_generator.get_amount_of_watermark_words_in_conversation()
+    # features['equality_in_posts'] = feature_generator.get_equality_measure_between_number_of_posts_each_person()
+    # features['num_of_posts'] = feature_generator.get_conversation_number_of_posts()
 
     return features
 
@@ -46,7 +47,11 @@ def process_single_file(data_file_path: str) -> dict:
 
     # generate features
     features_dict = generate_features_from_conversation_raw_data(conversation_raw_data)
-    if '.xml' in data_file_path:
+
+    # add labels to features
+    if 'WM.' in data_file_path:
+        features_dict['label'] = 2  # i.e, this is a watermark
+    elif '.xml' in data_file_path:
         # assumption: only the .xml files are the ones that have predators in them (by our choice of datasets)
         features_dict['label'] = 1  # i.e, there is a predator in this conversation
     else:
