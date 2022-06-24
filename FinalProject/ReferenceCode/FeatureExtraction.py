@@ -46,6 +46,7 @@ def seconds_to_string(time):
     return str
 
 
+
 def extract_author_text_dictionary_from_message_nodes(message_nodes):
     author_text_dictionary = {}
     for message_node in message_nodes:
