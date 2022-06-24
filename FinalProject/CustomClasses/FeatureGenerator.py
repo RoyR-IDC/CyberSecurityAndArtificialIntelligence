@@ -2,7 +2,7 @@ import numpy as np
 from dateutil import parser
 import os
 
-from FinalProject.global_definitions import WORD_BANK_DIR_PATH
+from global_definitions import WORD_BANK_DIR_PATH
 
 """
 feature ideas:
@@ -44,23 +44,68 @@ class FeatureGenerator(object):
         with open(profanity_words_filepath) as file:
             self._profanity_words = set([line.rstrip() for line in file.readlines()])
 
-    def get_amount_of_profanity_words_in_conversation(self):
-        counter = 0
-        for post in self._all_posts:
+    def get_who_starts(self):
+        return
+
+    def get_post_strings(self, posts):
+        strings = []
+        for post in posts:
             if post['talk'] is None or post['talk'] == '':
                 continue
-            post_unique_words = set(post['talk'].split())
-            counter += len(list(post_unique_words & self._profanity_words))
+            strings.append(post['talk'])
+        return strings
+
+    def posts_counter(self, posts, char):
+        counter = 0
+        for post in posts:
+            if post['talk'] is None or post['talk'] == '':
+                continue
+            counter += post['talk'].count(char)
         return counter
 
-    def get_amount_of_suggestive_words_in_conversation(self):
+    def posts_length_counter(self, posts):
         counter = 0
-        for post in self._all_posts:
+        for post in posts:
+            if post['talk'] is None or post['talk'] == '':
+                continue
+            counter += len(post['talk'].replace(" ", ""))
+        return counter
+
+    def add_special_chars_features(self, features):
+        p1 = self.posts_counter(self._person1_posts, "?")
+        p2 = self.posts_counter(self._person2_posts, "?")
+        features["percentage_of_question_marks"] = p1 / p2 if p2 != 0 else 1
+        features["p1_q_marks"] = p1
+        features["p2_q_marks"] = p2
+        return features
+
+    def get_characters_percentage(self, features):
+        p1 = self.posts_length_counter(self._person1_posts)
+        p2 = self.posts_length_counter(self._person2_posts)
+        features["percentage_of_chars"] = p1/p2 if p2 != 0 else 1
+        features["p1_chars"] = p1
+        features["p2_chars"] = p2
+        return features
+
+    def get_intersection(self, posts, bow):
+        counter = 0
+        for post in posts:
             if post['talk'] is None or post['talk'] == '':
                 continue
             post_unique_words = set(post['talk'].split())
-            counter += len(list(post_unique_words & self._suggestive_words))
+            counter += len(list(post_unique_words & bow))
         return counter
+
+    def get_amount_per_speaker(self, features):
+        for person_name, speaker in [("p1", self._person1_posts),
+                                               ("p2", self._person2_posts),
+                                               ("p1_and_p2", self._all_posts)]:
+            for bow_name, bow in [("prof_words", self._profanity_words),
+                                 ("pos_words", self._positive_words),
+                                 ("neg_word", self._negative_words),
+                                  ("seg_words", self._suggestive_words)]:
+                features[f"{person_name}_{bow_name}"] = self.get_intersection(speaker, bow)
+        return features
 
     def get_amount_of_watermark_words_in_conversation(self):
         counter = 0
@@ -95,5 +140,5 @@ class FeatureGenerator(object):
         if num_of_posts_person2 != 0:
             return num_of_posts_person1 / num_of_posts_person2
         else:
-            return np.nan
+            return 0
 

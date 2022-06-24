@@ -1,9 +1,9 @@
 import pandas as pd
 import yaml
 
-from FinalProject.Utils.tsvUtils import get_all_conversation_raw_data_tsv
-from FinalProject.Utils.xmlUtils import get_tree_root_from_filepath, get_all_conversation_raw_data_xml
-from FinalProject.Utils.ymlUtils import get_all_conversation_raw_data_yml
+from Utils.tsvUtils import get_all_conversation_raw_data_tsv
+from Utils.xmlUtils import get_tree_root_from_filepath, get_all_conversation_raw_data_xml
+from Utils.ymlUtils import get_all_conversation_raw_data_yml
 
 
 class FormatConverter(object):
@@ -20,6 +20,7 @@ class FormatConverter(object):
         :return:
         """
         if '.xml' in filepath:
+            print(filepath)
             tree = get_tree_root_from_filepath(file_path=filepath)
             conversation_raw_data = get_all_conversation_raw_data_xml(tree)
             return conversation_raw_data

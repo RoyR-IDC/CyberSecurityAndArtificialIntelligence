@@ -1,14 +1,153 @@
+import json
+import os
+import pickle
+from abc import abstractmethod
 from os import listdir
 from os.path import isfile, join
 
+import numpy as np
+from nltk.corpus import nps_chat
 import pandas as pd
+import yaml
+from lxml import etree
+from tqdm import tqdm
 
-from FinalProject.CustomClasses.FeatureGenerator import FeatureGenerator
-from FinalProject.CustomClasses.FormatConverter import FormatConverter
+import ReferenceCode.FeatureExtraction as FE
+import numpy
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import nltk
+from CustomClasses.FeatureGenerator import FeatureGenerator
+from CustomClasses.FormatConverter import FormatConverter
+from Utils.tsvUtils import get_all_conversation_raw_data_tsv
+from Utils.xmlUtils import get_tree_root_from_filepath, get_all_conversation_raw_data_xml
+from Utils.ymlUtils import get_all_conversation_raw_data_yml
+from global_definitions import DATA_DIR_PATH
+import glob
+
+NO_PREDATOR = 0
+PREDATOR_SIGNAL = 1
+
+class Dataset:
+    def __init__(self, label, base_data=DATA_DIR_PATH):
+        self.base_data = base_data
+        self.label = label
+
+    @abstractmethod
+    def get_dataset(self):
+        pass
+
+    @abstractmethod
+    def get_label(self):
+        return self.label
+    pass
 
 
-def get_all_data_file_paths(dir_path: str):
-    return [join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
+class PerJust(Dataset):
+    def __init__(self):
+        super().__init__(label=PREDATOR_SIGNAL)
+        self.path = f"{self.base_data}/per_just/"
+
+    def get_dataset(self):
+        all_conversations = []
+        for filepath in glob.glob(f"{self.path}/*.xml"):
+            tree = get_tree_root_from_filepath(file_path=filepath)
+            conversation_raw_data = get_all_conversation_raw_data_xml(tree)
+            all_conversations.append(conversation_raw_data)
+        return all_conversations
+
+
+class CommonsenseDialogues(Dataset):
+    def __init__(self):
+        super().__init__(label=NO_PREDATOR)
+        self.path = f"{self.base_data}/CommonsenseDialogues/data/"
+
+    def parse_tree(self, tree):
+        return
+
+    def get_dataset(self):
+        all_conversations = []
+        for file_path in glob.glob(f"{self.path}/*.json"):
+            with open(file_path, "r") as f:
+                data = json.load(f)
+                for conversation in data.values():
+                    conversation_raw_data = []
+                    turns = conversation["turns"]
+                    speaker = conversation["speaker"]
+                    for idx, sentence in enumerate(turns):
+                        output = {}
+                        output['id'] = speaker if idx % 2 == 0 else f"not_{speaker}"
+                        output['datetime'] = None
+                        output['talk'] = sentence
+                        output['comment'] = None
+                        output['category'] = None
+                        output['tone'] = None
+                        conversation_raw_data.append(output)
+                    all_conversations.append(conversation_raw_data)
+        merged = []
+        while len(all_conversations) != 0:
+            merge_count = np.random.randint(1, 25)
+            new_conversation = []
+            for i in range(merge_count):
+                if len(all_conversations) > i:
+                    new_conversation.extend(all_conversations.pop())
+            merged.append(new_conversation)
+        return merged
+
+
+class Jarvis(Dataset):
+    def __init__(self, ):
+        super().__init__(label=NO_PREDATOR)
+        self.path = f"{self.base_data}/jarvis/"
+
+    def get_dataset(self):
+        all_conversations = []
+        for filepath in glob.glob(f"{self.path}/*.tsv"):
+            df = pd.read_csv(filepath, sep='\t')
+            temp = df.iloc[:, 0].to_list()
+            conversation_raw_data = get_all_conversation_raw_data_tsv(temp)
+            all_conversations.append(conversation_raw_data)
+        return all_conversations
+
+
+class Yamls(Dataset):
+    def __init__(self):
+        super().__init__(label=NO_PREDATOR)
+        self.path = f"{self.base_data}/yamls/"
+
+    def get_dataset(self):
+        all_conversations = []
+        for filepath in glob.glob(f"{self.path}/*.yml"):
+            with open(filepath) as f:
+                dataMap = yaml.safe_load(f)
+                temp = dataMap['conversations']
+                conversation_raw_data = get_all_conversation_raw_data_yml(conversation_lists=temp)
+                all_conversations.append(conversation_raw_data)
+        return all_conversations
+
+
+class CornellMovieDialogs(Dataset):
+    def __init__(self):
+        super().__init__(label=NO_PREDATOR)
+        self.path = f"{self.base_data}/cornell_movie_dia/"
+
+    def get_dataset(self):
+        all_conversations = []
+        with open(f"{self.path}/conversations.pkl", "rb") as f:
+            conversations = pickle.load(f)
+            for conversation in conversations:
+                conversation_raw_data = []
+                speaker = "first_speaker"
+                for idx, sentence in enumerate(conversation):
+                    output = {}
+                    output['id'] = speaker if idx % 2 == 0 else f"not_{speaker}"
+                    output['datetime'] = None
+                    output['talk'] = sentence
+                    output['comment'] = None
+                    output['category'] = None
+                    output['tone'] = None
+                    conversation_raw_data.append(output)
+                all_conversations.append(conversation_raw_data)
+        return all_conversations
 
 
 def generate_features_from_conversation_raw_data(conversation_raw_data: list) -> dict:
@@ -17,11 +156,12 @@ def generate_features_from_conversation_raw_data(conversation_raw_data: list) ->
     features = dict()
 
     ## add features
-    features['num_of_profanity_words'] = feature_generator.get_amount_of_profanity_words_in_conversation()
-    features['num_of_suggestive_words'] = feature_generator.get_amount_of_suggestive_words_in_conversation()
+    features = feature_generator.get_amount_per_speaker(features)
     features['WM_counts'] = feature_generator.get_amount_of_watermark_words_in_conversation()
-    # features['equality_in_posts'] = feature_generator.get_equality_measure_between_number_of_posts_each_person()
-    # features['num_of_posts'] = feature_generator.get_conversation_number_of_posts()
+    features['equality_in_posts'] = feature_generator.get_equality_measure_between_number_of_posts_each_person()
+    features['num_of_posts'] = feature_generator.get_conversation_number_of_posts()
+    features = feature_generator.get_characters_percentage(features)
+    features = feature_generator.add_special_chars_features(features)
 
     return features
 
@@ -59,17 +199,119 @@ def process_single_file(data_file_path: str) -> dict:
     return features_dict
 
 
-def generate_dataframe_from_all_file_paths(data_dir_path: str):
+def generate_dataframe_from_all_file_paths(load_cache=True):
     # prepare
-    data_file_paths = get_all_data_file_paths(dir_path=data_dir_path)
+    cache_path = "./cache.pkl"
+    if load_cache and os.path.exists(cache_path):
+        with open(cache_path, "rb") as f:
+            return pickle.load(f)
+
+    datasets = [CornellMovieDialogs(), CommonsenseDialogues(), Jarvis(), Yamls(), PerJust()]
+
     df = pd.DataFrame()
 
-    # iterate
-    for filepath in data_file_paths:
+    for dataset in datasets:
         # process file
-        curr = process_single_file(data_file_path=filepath)
-        # add to dataframe
-        df = df.append(curr, ignore_index=True)
+        for conversation_raw_data in tqdm(dataset.get_dataset()):
+            conversation_features = generate_features_from_conversation_raw_data(conversation_raw_data)
+            conversation_features["label"] = dataset.get_label()
+            # add to dataframe
+            df = df.append(conversation_features, ignore_index=True)
 
+    with open(cache_path, "wb") as f:
+        pickle.dump(df, f)
     return df
 
+
+def create_csv(input_file_path, output_file_name, batch_size):
+    tree = etree.parse(input_file_path)
+    author_conversation_node_dictionary = FE.extract_author_conversation_node_dictionary_from_XML(tree)
+    del tree
+
+    output_file_csv = open(output_file_name, 'w+')
+    output_string_list = ['autor', 'number of conversation', 'percent of conversations started by the author',
+                          'difference between two preceding lines in seconds', 'number of messages sent',
+                          'average percent of lines in conversation', 'average percent of characters in conversation',
+                          'number of characters sent by the author', 'mean time of messages sent',
+                          'number of unique contacted authors', 'avg number of unique authors interacted with per conversation',
+                          'total unique authors and unique per chat difference',
+                          'conversation num and total unique authors difference',
+                          'average question marks per conversations', 'total question marks', 'total author question marks',
+                          'avg author question marks', 'author and conversation quetsion mark differnece',
+                          'author total negative in author conv',
+                          'author total neutral in author conv', 'author total positive in author conv',
+                          ' authortotal compound in author conv',
+                          'pos word count author', 'neg word count author', 'prof word count author',
+                          'is sexual predator']
+    output_string = ','.join(output_string_list) + "\n"
+
+    sexual_predator_ids_list = FE.sexual_predator_ids(sexual_predator_ids_file)
+
+    pos_file = open('positive.txt', 'r')
+    pos_words = pos_file.read().split('\n')[:-1]
+
+    prof_file = open('profanity.txt', 'r')
+    prof_words = prof_file.read().split('\n')[:-1]
+
+    neg_file = open('negative.txt', 'r')
+    neg_words = neg_file.read().split('\n')[:-1]
+
+    i = 0
+    for index, author in enumerate(sorted(author_conversation_node_dictionary)):
+
+        if index % 5000 == 0:
+            print(index, len(author_conversation_node_dictionary))
+
+        conversation_nodes = author_conversation_node_dictionary[author]
+        conversation_nodes_length = len(conversation_nodes)
+
+        author_conversation_text_sentiment_total = FE.calculate_author_conversation_sentiment_total(author, conversation_nodes)
+
+        total_unique_authors = FE.number_of_unique_authors_interacted_with(author, conversation_nodes)
+        total_author_question_marks = FE.total_authors_question_marks_per_conversation(author, conversation_nodes)
+
+        output_list = [author,
+                       len(conversation_nodes),
+                       FE.average_trough_all_conversations(author, conversation_nodes, FE.is_starting_conversation),
+                       FE.average_trough_all_conversations(author, conversation_nodes,
+                                                           FE.avg_time_between_message_lines_in_seconds_for_author_in_conversation),
+                       FE.number_of_messages_sent_by_the_author(author, conversation_nodes),
+                       FE.average_trough_all_conversations(author, conversation_nodes,
+                                                           FE.percentage_of_lines_in_conversation),
+                       FE.average_trough_all_conversations(author, conversation_nodes,
+                                                           FE.percentage_of_characters_in_conversation),
+                       FE.number_of_characters_sent_by_the_author(author, conversation_nodes),
+                       FE.mean_time_of_messages_sent(author, conversation_nodes),
+                       total_unique_authors,
+                       total_unique_authors / conversation_nodes_length,
+                       FE.difference_unique_authors_per_chat_and_total_unique(
+                           total_unique_authors, total_unique_authors / conversation_nodes_length),
+                       FE.difference_unique_authors_and_conversations(
+                           total_unique_authors, conversation_nodes_length
+                       ),
+                       FE.avg_question_marks_per_conversation(author, conversation_nodes),
+                       FE.total_question_marks_per_conversation(author, conversation_nodes),
+                       total_author_question_marks,
+                       total_author_question_marks / conversation_nodes_length,
+                       abs(total_author_question_marks - FE.total_question_marks_per_conversation(author, conversation_nodes)),
+                       author_conversation_text_sentiment_total['neg'],
+                       author_conversation_text_sentiment_total['neu'],
+                       author_conversation_text_sentiment_total['pos'],
+                       author_conversation_text_sentiment_total['compound'],
+                       FE.words_count_of_author(author, conversation_nodes, pos_words),
+                       FE.words_count_of_author(author, conversation_nodes, neg_words),
+                       FE.words_count_of_author(author, conversation_nodes, prof_words),
+                       '1' if author in sexual_predator_ids_list else '0'
+                       ]
+        output_string += ','.join(map(str, output_list)) + '\n'
+        if i == batch_size:
+            output_file_csv.write(output_string)
+            output_string = ''
+            i = -1
+
+        i += 1
+
+    output_file_csv.write(output_string)
+    del output_string
+    del author_conversation_node_dictionary
+    output_file_csv.close()

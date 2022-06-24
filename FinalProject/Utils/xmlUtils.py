@@ -59,6 +59,15 @@ def extract_post_raw_data(post_elem: ET.Element):
 def get_all_conversation_raw_data_xml(tree: ET) -> list:
     posts = list(tree.iter("POST"))  # equivalent: posts = [elem for elem in tree.iter() if elem.tag == 'POST']
     data = [extract_post_raw_data(post) for post in posts]
+    predator_username = list(tree.iter("PREDATOR"))[0].find("SCREENNAME/USERNAME").text
+    victim_username = list(tree.iter("VICTIM"))[0].find("SCREENNAME/USERNAME").text
+    for d in data:
+        if d["id"] == predator_username:
+            d["label"] = "predator"
+        elif d["id"] == victim_username:
+            d["label"] = "victim"
+        else:
+            d["label"] = "undefined"
     return data
 
 
