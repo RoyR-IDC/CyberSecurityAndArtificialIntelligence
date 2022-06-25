@@ -1,3 +1,5 @@
+import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import numpy as np
 from dateutil import parser
 import os
@@ -44,8 +46,21 @@ class FeatureGenerator(object):
         with open(profanity_words_filepath) as file:
             self._profanity_words = set([line.rstrip() for line in file.readlines()])
 
+        self.sid = SentimentIntensityAnalyzer()
+
     def get_who_starts(self):
         return
+
+    def get_sentiment_features(self, features):
+        for person_name, speaker in [("p1", self._person1_posts), ("p2", self._person2_posts)]:
+            d = self.sid.polarity_scores(" ".join(self.get_post_strings(speaker)))
+            for k, v in d.items():
+                features[f"sentiment_{k}_{person_name}"] = v
+        for person_name, speaker in [("p1", self._person1_posts), ("p2", self._person2_posts)]:
+            d = [self.sid.polarity_scores(" ".join(self.get_post_strings([post]))) for post in speaker]
+            for sen in ['neg', 'pos', 'neu', 'compound']:
+                features[f"avg_sentiment_{sen}_{person_name}"] = np.mean([x[sen] for x in d])
+        return features
 
     def get_post_strings(self, posts):
         strings = []
@@ -77,6 +92,13 @@ class FeatureGenerator(object):
         features["percentage_of_question_marks"] = p1 / p2 if p2 != 0 else 1
         features["p1_q_marks"] = p1
         features["p2_q_marks"] = p2
+
+        for person_name, speaker in [("p1", self._person1_posts), ("p2", self._person2_posts)]:
+            qs = 0
+            for sentence in self.get_post_strings(speaker):
+                if sentence.strip()[-1] == "?":
+                    qs += 1
+            features[f"{person_name}_questions"] = qs
         return features
 
     def get_characters_percentage(self, features):

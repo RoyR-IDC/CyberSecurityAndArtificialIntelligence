@@ -20,6 +20,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 def train_pipeline(X_train, y_train):
     pipeline_steps = [
         ('imputation', SimpleImputer()),
@@ -41,7 +42,7 @@ def get_best_model():
 def run_exps(X_train, y_train, X_test, y_test) -> pd.DataFrame:
     dfs = []
     models = [
-        ('LogReg', LogisticRegression()),
+        ('LogReg', LogisticRegression(max_iter=1000)),
         ('RF', RandomForestClassifier()),
         ('KNN', KNeighborsClassifier()),
         ('SVM', SVC()),
@@ -89,6 +90,5 @@ def run_exps(X_train, y_train, X_test, y_test) -> pd.DataFrame:
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.title(f'Comparison of Model by Classification Metric (CV=5)\n, train={X_train.shape[0]}, test={X_test.shape[0]}')
     plt.savefig(f'./benchmark_models_performance.png', dpi=300)
-
 
     return final, models

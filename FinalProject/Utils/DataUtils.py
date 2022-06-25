@@ -16,6 +16,7 @@ import ReferenceCode.FeatureExtraction as FE
 import numpy
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import nltk
+import random
 from CustomClasses.FeatureGenerator import FeatureGenerator
 from CustomClasses.FormatConverter import FormatConverter
 from Utils.tsvUtils import get_all_conversation_raw_data_tsv
@@ -27,10 +28,42 @@ import glob
 NO_PREDATOR = 0
 PREDATOR_SIGNAL = 1
 
+np.random.seed(42)
+random.seed(42)
+
+def extend_conversations(all_conversations, ration_min, ration_max):
+    merged = []
+    while len(all_conversations) != 0:
+        merge_count = np.random.randint(ration_min, ration_max)
+        new_conversation = []
+        for i in range(merge_count):
+            if len(all_conversations) > i:
+                new_conversation.extend(all_conversations.pop())
+        merged.append(new_conversation)
+    return merged
+
+
+def split_conversations(all_conversations):
+    merged = []
+    for conversation in all_conversations:
+        splitted = []
+        while len(conversation) != 0:
+            if len(conversation) <= 600:
+                merged.append(conversation)
+                break
+            num_sentences = np.random.randint(600, min(6000, len(conversation)))
+            new_conv = [conversation.pop(0) for _ in range(num_sentences)]
+            splitted.append(len(new_conv))
+            merged.append(new_conv)
+    return [x for x in merged if x]
+
+
 class Dataset:
-    def __init__(self, label, base_data=DATA_DIR_PATH):
+    def __init__(self, label, extend_ration_min, extend_ration_max, base_data=DATA_DIR_PATH):
         self.base_data = base_data
         self.label = label
+        self.extend_ration_min = extend_ration_min
+        self.extend_ration_max = extend_ration_max
 
     @abstractmethod
     def get_dataset(self):
@@ -39,12 +72,13 @@ class Dataset:
     @abstractmethod
     def get_label(self):
         return self.label
+
     pass
 
 
 class PerJust(Dataset):
     def __init__(self):
-        super().__init__(label=PREDATOR_SIGNAL)
+        super().__init__(label=PREDATOR_SIGNAL, extend_ration_min=1, extend_ration_max=1)
         self.path = f"{self.base_data}/per_just/"
 
     def get_dataset(self):
@@ -53,12 +87,12 @@ class PerJust(Dataset):
             tree = get_tree_root_from_filepath(file_path=filepath)
             conversation_raw_data = get_all_conversation_raw_data_xml(tree)
             all_conversations.append(conversation_raw_data)
-        return all_conversations
+        return split_conversations(all_conversations)
 
 
 class CommonsenseDialogues(Dataset):
     def __init__(self):
-        super().__init__(label=NO_PREDATOR)
+        super().__init__(label=NO_PREDATOR, extend_ration_min=1, extend_ration_max=20)
         self.path = f"{self.base_data}/CommonsenseDialogues/data/"
 
     def parse_tree(self, tree):
@@ -83,20 +117,13 @@ class CommonsenseDialogues(Dataset):
                         output['tone'] = None
                         conversation_raw_data.append(output)
                     all_conversations.append(conversation_raw_data)
-        merged = []
-        while len(all_conversations) != 0:
-            merge_count = np.random.randint(1, 25)
-            new_conversation = []
-            for i in range(merge_count):
-                if len(all_conversations) > i:
-                    new_conversation.extend(all_conversations.pop())
-            merged.append(new_conversation)
-        return merged
+
+        return extend_conversations(all_conversations, self.extend_ration_min, self.extend_ration_max)
 
 
 class Jarvis(Dataset):
     def __init__(self, ):
-        super().__init__(label=NO_PREDATOR)
+        super().__init__(label=NO_PREDATOR, extend_ration_min=1, extend_ration_max=8)
         self.path = f"{self.base_data}/jarvis/"
 
     def get_dataset(self):
@@ -106,12 +133,12 @@ class Jarvis(Dataset):
             temp = df.iloc[:, 0].to_list()
             conversation_raw_data = get_all_conversation_raw_data_tsv(temp)
             all_conversations.append(conversation_raw_data)
-        return all_conversations
+        return extend_conversations(all_conversations, self.extend_ration_min, self.extend_ration_max)
 
 
 class Yamls(Dataset):
     def __init__(self):
-        super().__init__(label=NO_PREDATOR)
+        super().__init__(label=NO_PREDATOR, extend_ration_min=1, extend_ration_max=10)
         self.path = f"{self.base_data}/yamls/"
 
     def get_dataset(self):
@@ -122,12 +149,12 @@ class Yamls(Dataset):
                 temp = dataMap['conversations']
                 conversation_raw_data = get_all_conversation_raw_data_yml(conversation_lists=temp)
                 all_conversations.append(conversation_raw_data)
-        return all_conversations
+        return extend_conversations(all_conversations, self.extend_ration_min, self.extend_ration_max)
 
 
 class CornellMovieDialogs(Dataset):
     def __init__(self):
-        super().__init__(label=NO_PREDATOR)
+        super().__init__(label=NO_PREDATOR, extend_ration_min=5, extend_ration_max=30)
         self.path = f"{self.base_data}/cornell_movie_dia/"
 
     def get_dataset(self):
@@ -147,7 +174,7 @@ class CornellMovieDialogs(Dataset):
                     output['tone'] = None
                     conversation_raw_data.append(output)
                 all_conversations.append(conversation_raw_data)
-        return all_conversations
+        return extend_conversations(all_conversations, self.extend_ration_min, self.extend_ration_max)
 
 
 def generate_features_from_conversation_raw_data(conversation_raw_data: list) -> dict:
@@ -162,6 +189,7 @@ def generate_features_from_conversation_raw_data(conversation_raw_data: list) ->
     features['num_of_posts'] = feature_generator.get_conversation_number_of_posts()
     features = feature_generator.get_characters_percentage(features)
     features = feature_generator.add_special_chars_features(features)
+    features = feature_generator.get_sentiment_features(features)
 
     return features
 
@@ -199,25 +227,32 @@ def process_single_file(data_file_path: str) -> dict:
     return features_dict
 
 
-def generate_dataframe_from_all_file_paths(load_cache=True):
+def generate_dataframe_from_all_file_paths(load_cache=False):
     # prepare
     cache_path = "./cache.pkl"
+    metadata_cache_path = "./metadata_cache.pkl"
     if load_cache and os.path.exists(cache_path):
         with open(cache_path, "rb") as f:
             return pickle.load(f)
 
-    datasets = [CornellMovieDialogs(), CommonsenseDialogues(), Jarvis(), Yamls(), PerJust()]
+    datasets = [PerJust(), CornellMovieDialogs(), CommonsenseDialogues(), Jarvis(), Yamls()]
 
     df = pd.DataFrame()
+
+    meta_data = pd.DataFrame()
 
     for dataset in datasets:
         # process file
         for conversation_raw_data in tqdm(dataset.get_dataset()):
+            meta_data_features = {"dataset": dataset.__class__.__name__,
+                                  "num_sentences_per_conv": len(conversation_raw_data)}
+            meta_data = meta_data.append(meta_data_features, ignore_index=True)
             conversation_features = generate_features_from_conversation_raw_data(conversation_raw_data)
             conversation_features["label"] = dataset.get_label()
-            # add to dataframe
             df = df.append(conversation_features, ignore_index=True)
 
+    with open(metadata_cache_path, "wb") as f:
+        pickle.dump(meta_data, f)
     with open(cache_path, "wb") as f:
         pickle.dump(df, f)
     return df
