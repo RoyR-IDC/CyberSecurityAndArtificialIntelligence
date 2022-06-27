@@ -27,6 +27,7 @@ import glob
 
 NO_PREDATOR = 0
 PREDATOR_SIGNAL = 1
+WATERMARK_SIGNAL = 2
 
 np.random.seed(42)
 random.seed(42)
@@ -249,6 +250,8 @@ def generate_dataframe_from_all_file_paths(load_cache=False):
             meta_data = meta_data.append(meta_data_features, ignore_index=True)
             conversation_features = generate_features_from_conversation_raw_data(conversation_raw_data)
             conversation_features["label"] = dataset.get_label()
+            if conversation_features['WM_counts'] > 10:
+                conversation_features["label"] = WATERMARK_SIGNAL
             df = df.append(conversation_features, ignore_index=True)
 
     with open(metadata_cache_path, "wb") as f:
